@@ -59,8 +59,7 @@ public class UserController {
         @PathVariable("pageSize") int pageSize)
         throws ProjectException {
         try {
-            Page<UserVo> userVoPage = userFace.findUserVoPage(userVo, pageNum, pageSize);
-            return ResponseWrapBuild.build(UserEnum.SUCCEED,userVoPage);
+            return null;
         } catch (Exception e) {
             log.error("查询用户列表异常：{}", ExceptionsUtil.getStackTraceAsString(e));
             throw new ProjectException(UserEnum.PAGE_FAIL);
@@ -77,11 +76,9 @@ public class UserController {
     @ApiImplicitParam(name = "userVo",value = "用户对象",required = true,dataType = "UserVo")
     ResponseWrap<UserVo> registerUser(@Validated(Create.class) @RequestBody UserVo userVo) throws ProjectException {
 
-        String plainPassword = userVo.getPassword();
         //必须要加{bcrypt}要不认证不通过
-        String password = "{bcrypt}"+bCryptPasswordEncoder.encode(plainPassword);
-        userVo.setPassword(password);
-        return ResponseWrapBuild.build(UserEnum.SUCCEED,userFace.createUser(userVo));
+
+        return null;
     }
 
     /**
@@ -93,8 +90,7 @@ public class UserController {
     @ApiOperation(value = "修改用户",notes = "修改用户")
     @ApiImplicitParam(name = "userVo",value = "用户对象",required = true,dataType = "UserVo")
     ResponseWrap<Boolean> updateUser(@Validated(Update.class) @RequestBody UserVo userVo) throws ProjectException {
-        Boolean flag = userFace.updateUser(userVo);
-        return ResponseWrapBuild.build(UserEnum.SUCCEED,flag);
+        return null;
     }
 
     /**
@@ -106,9 +102,7 @@ public class UserController {
     @ApiOperation(value = "删除用户",notes = "删除用户")
     @ApiImplicitParam(name = "userVo",value = "用户查询对象",required = true,dataType = "UserVo")
     ResponseWrap<Boolean> deleteUser(@Validated(Delete.class) @RequestBody UserVo userVo ) throws ProjectException {
-        String[] checkedIds = userVo.getCheckedIds();
-        Boolean flag = userFace.deleteUser(checkedIds);
-        return ResponseWrapBuild.build(UserEnum.SUCCEED,flag);
+        return null;
     }
 
     /**
@@ -120,8 +114,7 @@ public class UserController {
     @ApiOperation(value = "查找用户",notes = "查找用户")
     @ApiImplicitParam(paramType = "path",name = "userId",value = "用户Id",example = "1",dataType = "Long")
     ResponseWrap<UserVo> findUserByUserId(@PathVariable("userId") Long userId) throws ProjectException {
-        UserVo userVo = userFace.findUserByUserId(userId);
-        return ResponseWrapBuild.build(UserEnum.SUCCEED,userVo);
+        return null;
     }
 
     /**
@@ -131,16 +124,14 @@ public class UserController {
     @GetMapping("select-list")
     @ApiOperation(value = "查找用户list",notes = "查找用户list")
     ResponseWrap<List<UserVo>> findUserVoList() throws ProjectException {
-        List<UserVo> list = userFace.findUserVoList();
-        return ResponseWrapBuild.build(UserEnum.SUCCEED,list);
+        return null;
     }
 
     @PostMapping("update-user-enableFlag")
     @ApiOperation(value = "修改用户状态",notes = "修改用户状态")
     @ApiImplicitParam(name = "userVo",value = "用户查询对象",required = true,dataType = "UserVo")
     ResponseWrap<Boolean> updateUserEnableFlag(@Validated(UpdateEnableFlag.class) @RequestBody UserVo userVo) throws ProjectException {
-        Boolean flag = userFace.updateUser(userVo);
-        return ResponseWrapBuild.build(UserEnum.SUCCEED,flag);
+        return null;
     }
 
     @PostMapping("rest-password")
@@ -148,10 +139,7 @@ public class UserController {
     @ApiImplicitParam(name = "userVo",value = "用户对象",required = true,dataType = "UserVo")
     ResponseWrap<Boolean> restPssword(@RequestBody UserVo userVo) throws ProjectException {
         //必须要加{bcrypt}要不认证不通过
-        String password = "{bcrypt}"+bCryptPasswordEncoder.encode("88488");
-        userVo.setPassword(password);
-        Boolean flag = userFace.updateUser(userVo);
-        return ResponseWrapBuild.build(UserEnum.SUCCEED,flag);
+        return null;
     }
 
 }

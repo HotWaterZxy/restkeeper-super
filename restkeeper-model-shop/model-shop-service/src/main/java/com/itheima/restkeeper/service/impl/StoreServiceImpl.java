@@ -26,51 +26,29 @@ public class StoreServiceImpl extends ServiceImpl<StoreMapper, Store> implements
     @Override
     public Page<Store> findStoreVoPage(StoreVo storeVo, int pageNum, int pageSize) {
         //分页条件构建
-        Page<Store> page = new Page<>(pageNum,pageSize);
-        QueryWrapper<Store> queryWrapper = new QueryWrapper<>();
         //按门店名称查询
-        if (!EmptyUtil.isNullOrEmpty(storeVo.getStoreName())) {
-            queryWrapper.lambda().likeRight(Store::getStoreName,storeVo.getStoreName());
-        }
         //按门店状态查询
-        if (!EmptyUtil.isNullOrEmpty(storeVo.getEnableFlag())) {
-            queryWrapper.lambda().eq(Store::getEnableFlag,storeVo.getEnableFlag());
-        }
-        queryWrapper.lambda().orderByDesc(Store::getCreatedTime);
-        return page(page, queryWrapper);
+        return null;
     }
 
     @Override
     public Store createStore(StoreVo storeVo) {
-        Store store = BeanConv.toBean(storeVo, Store.class);
-        boolean flag = save(store);
-        if (flag){
-            return store;
-        }
         return null;
     }
 
     @Override
     public Boolean updateStore(StoreVo storeVo) {
-        Store store = BeanConv.toBean(storeVo, Store.class);
-        return updateById(store);
+        return null;
     }
 
     @Override
     public Boolean deleteStore(String[] checkedIds) {
-        List<String> ids = Arrays.asList(checkedIds);
-        List<Long> idsLong = new ArrayList<>();
-        ids.forEach(n->{
-            idsLong.add(Long.valueOf(n));
-        });
-        return removeByIds(idsLong);
+        return null;
     }
 
     @Override
     public List<Store> findStoreVoList() {
-        QueryWrapper<Store> queryWrapper = new QueryWrapper<>();
-        queryWrapper.lambda().eq(BasicPojo::getEnableFlag,SuperConstant.YES);
-        return list(queryWrapper);
+        return null;
     }
 
 }

@@ -45,8 +45,8 @@ public class BrandController {
         @RequestBody BrandVo brandVo,
         @PathVariable("pageNum") int pageNum,
         @PathVariable("pageSize") int pageSize) {
-        Page<BrandVo> brandVoPage = brandFace.findBrandVoPage(brandVo, pageNum, pageSize);
-        return ResponseWrapBuild.build(BrandEnum.SUCCEED,brandVoPage);
+
+        return null;
     }
 
     /**
@@ -56,8 +56,7 @@ public class BrandController {
     @GetMapping("list")
     @ApiOperation(value = "查询品牌下拉框",notes = "查询品牌下拉框")
     public ResponseWrap<List<BrandVo>> findBrandVoList() {
-        List<BrandVo> brandVoPage = brandFace.findBrandVoList();
-        return ResponseWrapBuild.build(BrandEnum.SUCCEED,brandVoPage);
+        return null;
     }
 
     /**
@@ -69,8 +68,7 @@ public class BrandController {
     @ApiOperation(value = "添加品牌",notes = "添加品牌")
     @ApiImplicitParam(name = "brandVo",value = "品牌对象",required = true,dataType = "BrandVo")
     ResponseWrap<BrandVo> createBrand(@RequestBody BrandVo brandVo) {
-        BrandVo brandVoResult = brandFace.createBrand(brandVo);
-        return ResponseWrapBuild.build(BrandEnum.SUCCEED,brandVoResult);
+        return null;
     }
 
     /**
@@ -82,8 +80,7 @@ public class BrandController {
     @ApiOperation(value = "修改品牌",notes = "修改品牌")
     @ApiImplicitParam(name = "brandVo",value = "品牌对象",required = true,dataType = "BrandVo")
     ResponseWrap<Boolean> updateBrand(@RequestBody BrandVo brandVo) {
-        Boolean flag = brandFace.updateBrand(brandVo);
-        return ResponseWrapBuild.build(BrandEnum.SUCCEED,flag);
+        return null;
     }
 
     /**
@@ -95,9 +92,7 @@ public class BrandController {
     @ApiOperation(value = "删除品牌",notes = "删除品牌")
     @ApiImplicitParam(name = "brandVo",value = "品牌查询对象",required = true,dataType = "BrandVo")
     ResponseWrap<Boolean> deleteBrand(@RequestBody BrandVo brandVo ) {
-        String[] checkedIds = brandVo.getCheckedIds();
-        Boolean flag = brandFace.deleteBrand(checkedIds);
-        return ResponseWrapBuild.build(BrandEnum.SUCCEED,flag);
+        return null;
     }
 
     /**
@@ -109,16 +104,14 @@ public class BrandController {
     @ApiOperation(value = "查找品牌",notes = "查找品牌")
     @ApiImplicitParam(paramType = "path",name = "brandId",value = "品牌Id",dataType = "Long")
     ResponseWrap<BrandVo> findBrandByBrandId(@PathVariable("brandId") Long brandId) {
-        BrandVo brandVo = brandFace.findBrandByBrandId(brandId);
-        return ResponseWrapBuild.build(BrandEnum.SUCCEED,brandVo);
+        return null;
     }
 
     @PostMapping("update-brand-enableFlag")
     @ApiOperation(value = "修改品牌状态",notes = "修改品牌状态")
     @ApiImplicitParam(name = "brandVo",value = "品牌查询对象",required = true,dataType = "BrandVo")
     ResponseWrap<Boolean> updateBrandEnableFlag(@RequestBody BrandVo brandVo) {
-        Boolean flag = brandFace.updateBrand(brandVo);
-        return ResponseWrapBuild.build(BrandEnum.SUCCEED,flag);
+        return null;
     }
 
 }

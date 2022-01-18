@@ -49,8 +49,7 @@ public class StoreController {
         @RequestBody StoreVo storeVo,
         @PathVariable("pageNum") int pageNum,
         @PathVariable("pageSize") int pageSize) {
-        Page<StoreVo> storeVoPage = storeFace.findStoreVoPage(storeVo, pageNum, pageSize);
-        return ResponseWrapBuild.build(StoreEnum.SUCCEED,storeVoPage);
+        return null;
     }
 
     /**
@@ -62,8 +61,7 @@ public class StoreController {
     @ApiOperation(value = "添加门店",notes = "添加门店")
     @ApiImplicitParam(name = "storeVo",value = "门店对象",required = true,dataType = "StoreVo")
     ResponseWrap<StoreVo> createStore(@RequestBody StoreVo storeVo) {
-        StoreVo storeVoResult = storeFace.createStore(storeVo);
-        return ResponseWrapBuild.build(StoreEnum.SUCCEED,storeVoResult);
+        return null;
     }
 
     /**
@@ -75,8 +73,7 @@ public class StoreController {
     @ApiOperation(value = "修改门店",notes = "修改门店")
     @ApiImplicitParam(name = "storeVo",value = "门店对象",required = true,dataType = "StoreVo")
     ResponseWrap<Boolean> updateStore(@RequestBody StoreVo storeVo) {
-        Boolean flag = storeFace.updateStore(storeVo);
-        return ResponseWrapBuild.build(StoreEnum.SUCCEED,flag);
+        return null;
     }
 
     /**
@@ -88,9 +85,7 @@ public class StoreController {
     @ApiOperation(value = "删除门店",notes = "删除门店")
     @ApiImplicitParam(name = "storeVo",value = "门店查询对象",required = true,dataType = "StoreVo")
     ResponseWrap<Boolean> deleteStore(@RequestBody StoreVo storeVo ) {
-        String[] checkedIds = storeVo.getCheckedIds();
-        Boolean flag = storeFace.deleteStore(checkedIds);
-        return ResponseWrapBuild.build(StoreEnum.SUCCEED,flag);
+        return null;
     }
 
     /**
@@ -102,8 +97,7 @@ public class StoreController {
     @ApiOperation(value = "查找门店",notes = "查找门店")
     @ApiImplicitParam(paramType = "path",name = "storeId",value = "门店Id",dataType = "Long")
     ResponseWrap<StoreVo> findStoreByStoreId(@PathVariable("storeId") Long storeId) {
-        StoreVo storeVo = storeFace.findStoreByStoreId(storeId);
-        return ResponseWrapBuild.build(StoreEnum.SUCCEED,storeVo);
+        return null;
     }
 
     /**
@@ -113,8 +107,7 @@ public class StoreController {
     @GetMapping("list")
     @ApiOperation(value = "查找门店列表",notes = "查找门店列表")
     ResponseWrap<List<StoreVo>> findStoreVoList() {
-        List<StoreVo> list = storeFace.findStoreVoList();
-        return ResponseWrapBuild.build(StoreEnum.SUCCEED,list);
+        return null;
     }
 
     /**
@@ -124,8 +117,7 @@ public class StoreController {
     @PostMapping("update-store-enableFlag")
     @ApiOperation(value = "修改门店状态",notes = "修改门店状态")
     ResponseWrap<Boolean> updateStoreEnableFlag(@RequestBody StoreVo storeVo) {
-        Boolean flag = storeFace.updateStore(storeVo);
-        return ResponseWrapBuild.build(StoreEnum.SUCCEED,flag);
+        return null;
     }
 
 }
