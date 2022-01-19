@@ -597,41 +597,14 @@ public class AppletFaceImpl implements AppletFace {
     @Transactional
     public Boolean rotaryTable(Long sourceTableId, Long targetTableId, Long orderNo) throws ProjectException {
         try {
-            Boolean flag = true;
             //1、锁定目标桌台
-            String keyTargetTableId = AppletCacheConstant.OPEN_TABLE_LOCK + targetTableId;
-            RLock lock = redissonClient.getLock(keyTargetTableId);
-            if (lock.tryLock(
-                    AppletCacheConstant.REDIS_LEASETIME,
-                    AppletCacheConstant.REDIS_WAIT_TIME,
-                    TimeUnit.SECONDS)) {
                 //2、查询目标桌台
-                Table targetTable = tableService.getById(targetTableId);
                 //2.1、桌台空闲
-                if (SuperConstant.FREE.equals(targetTable.getTableStatus())) {
                     //3、订单关联新桌台
-                    flag = orderService.rotaryTable(sourceTableId, targetTableId, orderNo);
-                    if (flag) {
                         //4、修改桌台状态
-                        tableService.updateTable(TableVo.builder()
-                            .id(targetTableId)
-                            .tableStatus(SuperConstant.USE)
-                            .build());
-                        tableService.updateTable(TableVo.builder()
-                            .id(sourceTableId)
-                            .tableStatus(SuperConstant.FREE)
-                            .build());
-                    } else {
-                        throw new ProjectException(RotaryTableEnum.ROTARY_TABLE_FAIL);
-                    }
                 //2.2桌台非空闲
-                } else {
-                    throw  new ProjectException(RotaryTableEnum.ROTARY_TABLE_FAIL);
-                }
-            }
-            return flag;
-        }
-        catch (Exception e){
+            return null;
+        } catch (Exception e){
             log.error("操作购物车详情异常：{}", ExceptionsUtil.getStackTraceAsString(e));
             throw new ProjectException(TableEnum.ROTARY_TABLE_FAIL);
         }

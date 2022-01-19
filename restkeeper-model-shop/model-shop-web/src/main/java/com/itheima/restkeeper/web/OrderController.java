@@ -64,8 +64,7 @@ public class OrderController {
         @PathVariable("dishId") Long dishId,
         @PathVariable("orderNo") Long orderNo,
         @PathVariable("opertionType") String opertionType) throws ProjectException {
-        OrderVo orderVo = orderFace.opertionToOrderItem(dishId,orderNo,opertionType);
-        return ResponseWrapBuild.build(BrandEnum.SUCCEED,orderVo);
+        return null;
     }
 
     @PostMapping("handleTrading")
@@ -73,12 +72,7 @@ public class OrderController {
     @ApiImplicitParam(name = "orderVo",value = "订单信息",dataType = "OrderVo")
     public ResponseWrap<TradingVo> handleTrading(@RequestBody OrderVo orderVo){
         //获得结算人信息
-        String userVoString = UserVoContext.getUserVoString();
-        UserVo userVo = JSONObject.parseObject(userVoString, UserVo.class);
-        orderVo.setCashierId(userVo.getId());
-        orderVo.setCashierName(userVo.getUsername());
-        TradingVo tradingVo = orderFace.handleTrading(orderVo);
-        return ResponseWrapBuild.build(BrandEnum.SUCCEED,tradingVo);
+        return null;
     }
 
     @PostMapping("queryQrCode")
@@ -98,12 +92,7 @@ public class OrderController {
     @ApiImplicitParam(name = "orderVo",value = "订单信息",dataType = "OrderVo")
     public ResponseWrap<Boolean> handleTradingRefund(@RequestBody OrderVo orderVo){
         //获得当前订单结算人信息
-        String userVoString = UserVoContext.getUserVoString();
-        UserVo userVo = JSONObject.parseObject(userVoString, UserVo.class);
-        orderVo.setCashierId(userVo.getId());
-        orderVo.setCashierName(userVo.getUsername());
-        Boolean flag = orderFace.handleTradingRefund(orderVo);
-        return ResponseWrapBuild.build(BrandEnum.SUCCEED,flag);
+        return null;
     }
 
     @PostMapping("handle-trading-md")

@@ -55,16 +55,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Override
     public Boolean rotaryTable(Long sourceTableId, Long targetTableId, Long orderNo) {
         //查询目标桌台
-        Table table = tableService.getById(targetTableId);
-        Order order = Order.builder()
-                .tableId(table.getId())
-                .tableName(table.getTableName())
-                .areaId(table.getAreaId()).build();
         //订单修改
-        LambdaQueryWrapper<Order> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(Order::getTableId,sourceTableId).eq(Order::getOrderNo,orderNo);
-        lambdaQueryWrapper.eq(Order::getOrderState,TradingConstant.DFK);
-        return update(order,lambdaQueryWrapper);
+        return null;
     }
 
     @Override

@@ -114,73 +114,15 @@ public class OrderFaceImpl implements OrderFace {
                                        Long orderNo,
                                        String opertionType)throws ProjectException {
         //1、判定订单待支付状态才可操作
-        OrderVo orderVoResult = orderService.findOrderByOrderNo(orderNo);
-        if (!TradingConstant.DFK.equals(orderVoResult.getOrderState())){
-            throw new ProjectException(OrderEnum.STATUS_FAIL);
-        }
         //2、判定菜品处于起售状态才可操作
-        Dish dish = dishService.getById(dishId);
-        if (!SuperConstant.YES.equals(dish.getEnableFlag())||
-                !SuperConstant.YES.equals(dish.getDishStatus())){
-            throw new ProjectException(OrderEnum.DISH_STATUS_FAIL);
-        }
         //3、锁定订单
-        String keyOrderItem = AppletCacheConstant.ADD_TO_ORDERITEM_LOCK+orderNo;
-        RLock lockOrderItem = redissonClient.getLock(keyOrderItem);
-        try {
-            if (lockOrderItem.tryLock(
-                AppletCacheConstant.REDIS_WAIT_TIME,
-                AppletCacheConstant.REDIS_LEASETIME,
-                TimeUnit.SECONDS)){
-                String key = AppletCacheConstant.REPERTORY_DISH+dishId;
-                RAtomicLong atomicLong = redissonClient.getAtomicLong(key);
                 //4.1、添加可核算订单项
-                if (opertionType.equals(SuperConstant.OPERTION_TYPE_ADD)){
-                    this.addToOrderItem(dishId,orderNo,atomicLong);
-                }
                 //4.2、移除可核算订单项
-                if (opertionType.equals(SuperConstant.OPERTION_TYPE_REMOVE)){
-                    this.removeToOrderItem(dishId,orderNo,atomicLong);
-                }
                 //5、计算订单总金额
-                List<OrderItem> orderItemListResult = orderItemService.findOrderItemByOrderNo(orderNo);
-                BigDecimal sumPrice = orderItemListResult.stream()
-                    .map(n->{
-                        BigDecimal price = n.getPrice();
-                        BigDecimal reducePrice = n.getReducePrice();
-                        Long dishNum = n.getDishNum();
-                        //如果有优惠价格以优惠价格计算
-                        if (EmptyUtil.isNullOrEmpty(reducePrice)){
-                            return price.multiply(new BigDecimal(dishNum));
-                        }else {
-                            return reducePrice.multiply(new BigDecimal(dishNum));
-                        }
-                    }
-                ).reduce(BigDecimal.ZERO, BigDecimal::add);
-                orderVoResult.setPayableAmountSum(sumPrice);
                 //6、修改订单总金额
-                OrderVo orderVoHandler = OrderVo.builder()
-                        .id(orderVoResult.getId())
-                        .payableAmountSum(sumPrice).build();
-                boolean flag = orderService.updateById(BeanConv.toBean(orderVoHandler, Order.class));
-                if (!flag){
-                    throw new ProjectException(OrderItemEnum.SAVE_ORDER_FAIL);
-                }
                 //7、返回新订单信息
-                if (!EmptyUtil.isNullOrEmpty(orderVoResult)){
-                    List<OrderItemVo> orderItemVoStatisticsList = BeanConv
-                            .toBeanList(orderItemListResult, OrderItemVo.class);
-                    orderVoResult.setOrderItemVoStatisticsList(orderItemVoStatisticsList);
-                    return orderVoResult;
-                }
-            }
-            return orderVoResult;
-        } catch (InterruptedException e) {
-            log.error("操作订单信息异常：{}", ExceptionsUtil.getStackTraceAsString(e));
-            throw new ProjectException(OrderEnum.OPERTION_SHOPPING_CART_FAIL);
-        }finally {
-            lockOrderItem.unlock();
-        }
+
+        return null;
     }
 
     /**
@@ -192,14 +134,8 @@ public class OrderFaceImpl implements OrderFace {
      */
     private void removeToOrderItem(Long dishId, Long orderNo, RAtomicLong atomicLong)  {
         //1、修改订单项
-        Boolean flagOrderItem  = orderItemService.updateDishNum(-1L, dishId,orderNo);
         //2、菜品库存
-        Boolean flagDish = dishService.updateDishNumber(1L,dishId);
-        if (!flagOrderItem||!flagDish){
-            throw new ProjectException(ShoppingCartEnum.UPDATE_DISHNUMBER_FAIL);
-        }
         //3、添加缓存中的库存数量
-        atomicLong.incrementAndGet();
     }
 
     /**
@@ -211,21 +147,10 @@ public class OrderFaceImpl implements OrderFace {
      */
     private void addToOrderItem(Long dishId, Long orderNo, RAtomicLong atomicLong)  {
         //1、如果库存够，redis减库存
-        if (atomicLong.decrementAndGet()>=0){
             //2、修改可核算订单项
-            Boolean flagOrderItem  = orderItemService.updateDishNum(1L, dishId,orderNo);
             //3、减菜品库存
-            Boolean flagDish = dishService.updateDishNumber(-1L,dishId);
-            if (!flagOrderItem||!flagDish){
                 //4、减菜品库存失败，归还redis菜品库存
-                atomicLong.incrementAndGet();
-                throw new ProjectException(ShoppingCartEnum.UPDATE_DISHNUMBER_FAIL);
-            }
-        }else {
             //5、redis库存不足，虽然可以不处理，但建议还是做归还库存
-            atomicLong.incrementAndGet();
-            throw new ProjectException(ShoppingCartEnum.UNDERSTOCK);
-        }
     }
 
 
@@ -233,35 +158,10 @@ public class OrderFaceImpl implements OrderFace {
     @GlobalTransactional
     public TradingVo handleTrading(OrderVo orderVo) throws ProjectException{
         //1、根据订单生成交易单
-        TradingVo tradingVo = tradingConvertor(orderVo);
-        if (EmptyUtil.isNullOrEmpty(tradingVo)){
-            throw new ProjectException(OrderEnum.FAIL);
-        }
         //2、调用统一收单线下交易预创建
-        TradingVo tradingVoResult = null;
-        if (TradingConstant.TRADING_CHANNEL_WECHAT_PAY.equals(orderVo.getTradingChannel())||
-            TradingConstant.TRADING_CHANNEL_ALI_PAY.equals(orderVo.getTradingChannel())){
-            tradingVoResult = nativePayFace.createDownLineTrading(tradingVo);
-        }else if (TradingConstant.TRADING_CHANNEL_CASH_PAY.equals(orderVo.getTradingChannel())){
-            tradingVoResult = cashPayFace.createCachTrading(tradingVo);
-        }else{
-            throw new ProjectException(OrderEnum.PLACE_ORDER_FAIL);
-        }
         //3、结算后桌台状态修改：开桌-->空闲
-        Boolean flag = true;
-        if (EmptyUtil.isNullOrEmpty(tradingVoResult)){
-            throw new ProjectException(OrderEnum.FAIL);
-        }else {
-            TableVo tableVo = TableVo.builder()
-                .id(orderVo.getTableId())
-                .tableStatus(SuperConstant.FREE).build();
             //4、修改桌台状态
-            flag = tableFace.updateTable(tableVo);
-            if (!flag){
-                throw new ProjectException(OrderEnum.FAIL);
-            }
-        }
-        return tradingVoResult;
+        return null;
     }
 
     @Override
@@ -273,32 +173,11 @@ public class OrderFaceImpl implements OrderFace {
     @GlobalTransactional
     public Boolean handleTradingRefund(OrderVo orderVo)throws ProjectException {
         //1、获取当前交易单信息
-        OrderVo orderVoBefore = findOrderVoPaid(orderVo.getOrderNo());
         //2、退款收款人不为同一人，退款操作拒绝
-        if (orderVo.getCashierId().longValue()!=orderVoBefore.getCashierId().longValue()){
-            throw new ProjectException(OrderEnum.REFUND_FAIL);
-        }
         //3、当前交易单信息，退款操作拒绝
-        if (!TradingConstant.YJS.equals(orderVoBefore.getOrderState())){
-            throw new ProjectException(OrderEnum.REFUND_FAIL);
-        }
         //4、根据订单生成交易单
-        TradingVo tradingVo = tradingConvertor(orderVo);
-        if (EmptyUtil.isNullOrEmpty(tradingVo)){
-            throw new ProjectException(OrderEnum.FAIL);
-        }
         //5、执行统一收单交易退款接口
-        TradingVo tradingVoResult = null;
-        if (TradingConstant.TRADING_CHANNEL_WECHAT_PAY.equals(orderVo.getTradingChannel())||
-            TradingConstant.TRADING_CHANNEL_ALI_PAY.equals(orderVo.getTradingChannel())){
-            tradingVoResult = nativePayFace.refundDownLineTrading(tradingVo);
-        }else if (TradingConstant.TRADING_CHANNEL_CASH_PAY.equals(orderVo.getTradingChannel())){
-            tradingVoResult = cashPayFace.refundCachTrading(tradingVo);
-        }
-        if (EmptyUtil.isNullOrEmpty(tradingVoResult)){
-            throw new ProjectException(OrderEnum.FAIL);
-        }
-        return true;
+        return null;
     }
 
     @Override
@@ -391,53 +270,18 @@ public class OrderFaceImpl implements OrderFace {
      * @return TradingVo 交易单
      */
     private TradingVo payTradingVo(OrderVo orderVo){
-        Order order = orderService.getById(orderVo.getId());
         //应付总金额
-        BigDecimal payableAmountSum = order.getPayableAmountSum();
         //打折
-        BigDecimal discount = orderVo.getDiscount();
         //优惠
-        BigDecimal reduce = orderVo.getReduce();
         //计算实付总金额
-        BigDecimal realAmountSum = payableAmountSum
-                .multiply(discount.divide(new BigDecimal(10)))
-                .subtract(reduce);
         //实付金额
-        order.setRealAmountSum(realAmountSum);
         //收银人id
-        order.setCashierId(orderVo.getCashierId());
         //收银人名称
-        order.setCashierName(orderVo.getCashierName());
         //支付渠道
-        order.setTradingChannel(orderVo.getTradingChannel());
         //支付类型
-        order.setTradingType(orderVo.getTradingType());
         //订单状态：现金结算：YJS,支付宝，微信结算：FKZ
-        if (TradingConstant.TRADING_CHANNEL_CASH_PAY.equals(orderVo.getTradingChannel())){
-            order.setOrderState(TradingConstant.YJS);
-        }else {
-            order.setOrderState(TradingConstant.FKZ);
-        }
-        boolean flag = orderService.updateById(order);
         //构建交易单
-        if (flag){
-            TradingVo tradingVo = TradingVo.builder()
-                .tradingAmount(realAmountSum)
-                .tradingChannel(orderVo.getTradingChannel())
-                .tradingType(orderVo.getTradingType())
-                .tradingState(order.getOrderState())
-                .enterpriseId(order.getEnterpriseId())
-                .isRefund(order.getIsRefund())
-                .storeId(order.getTableId())
-                .payeeId(orderVo.getCashierId())
-                .payeeName(orderVo.getCashierName())
-                .productOrderNo(order.getOrderNo())
-                .memo(order.getTableName()+":"+order.getOrderNo())
-                .build();
-            return tradingVo;
-        }else {
-            throw new ProjectException(OrderEnum.UPDATE_FAIL);
-        }
+        return null;
     }
 
     /***
@@ -446,29 +290,10 @@ public class OrderFaceImpl implements OrderFace {
      * @return TradingVo 交易单
      */
     private TradingVo refundTradingVo(OrderVo orderVo){
-        Order order = orderService.getById(orderVo.getId());
         //修改退款金额
-        order.setRefund(order.getRefund().add(orderVo.getOperTionRefund()));
         //有退款行为
-        order.setIsRefund(SuperConstant.YES);;
-        boolean flag = orderService.updateById(order);
         //构建交易单
-        if (flag){
-            TradingVo tradingVo = TradingVo.builder()
-                .operTionRefund(orderVo.getOperTionRefund())//前台传递过来退款金额
-                .tradingAmount(order.getRealAmountSum())//订单实付金额
-                .refund(order.getRefund())//订单退款金额
-                .isRefund(SuperConstant.YES)
-                .tradingChannel(orderVo.getTradingChannel())
-                .tradingType(orderVo.getTradingType())
-                .enterpriseId(orderVo.getEnterpriseId())
-                .productOrderNo(order.getOrderNo())
-                .memo(orderVo.getTableName()+":"+orderVo.getOrderNo())
-                .build();
-            return tradingVo;
-        }else {
-            throw new ProjectException(OrderEnum.UPDATE_FAIL);
-        }
+        return null;
     }
 
     /***
