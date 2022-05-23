@@ -25,32 +25,48 @@ import java.util.stream.Collectors;
  * @ClassName BrandFaceImpl.java
  * @Description 品牌dubbo接口定义实现
  */
-@DubboService(version = "${dubbo.application.version}",timeout = 5000,
-    methods ={
-        @Method(name = "findBrandVoPage",retries = 2),
-        @Method(name = "createBrand",retries = 0),
-        @Method(name = "updateBrand",retries = 0),
-        @Method(name = "deleteBrand",retries = 0)
-    })
+@DubboService(version = "${dubbo.application.version}", timeout = 5000,
+        methods = {
+                @Method(name = "findBrandVoPage", retries = 2),
+                @Method(name = "createBrand", retries = 0),
+                @Method(name = "updateBrand", retries = 0),
+                @Method(name = "deleteBrand", retries = 0)
+        })
 @Slf4j
 public class BrandFaceImpl implements BrandFace {
 
     @Autowired
     IBrandService brandService;
 
-
+    @DubboReference(version = "${dubbo.application.version}", check = false)
+    AffixFace affixFace;
 
     @Override
     public Page<BrandVo> findBrandVoPage(BrandVo brandVo,
                                          int pageNum,
-                                         int pageSize) throws ProjectException{
+                                         int pageSize) throws ProjectException {
+
         try {
             //查询Page<Brand>图片分页
+            Page<Brand> page = brandService.findBrandVoPage(brandVo, pageNum, pageSize);
             //转化Page<Brand>为Page<BrandVo>
+            Page<BrandVo> pageVo = new Page<>();
+            BeanConv.toBean(page, pageVo);
             //转换List<Brand>为 List<BrandVo>
+            List<Brand> brandList = page.getRecords();
+            List<BrandVo> brandVoList = BeanConv.toBeanList(brandList, BrandVo.class);
             //处理附件
+            if (!EmptyUtil.isNullOrEmpty(pageVo) && !EmptyUtil.isNullOrEmpty(brandVoList)) {
+                brandVoList.forEach(n -> {
+                    List<AffixVo> affixVoList = affixFace.findAffixVoByBusinessId(n.getId());
+                    if (!EmptyUtil.isNullOrEmpty(affixVoList)) {
+                        n.setAffixVo(affixVoList.get(0));
+                    }
+                });
+            }
+            pageVo.setRecords(brandVoList);
             //返回结果
-            return null;
+            return pageVo;
         } catch (Exception e) {
             log.error("查询品牌列表异常：{}", ExceptionsUtil.getStackTraceAsString(e));
             throw new ProjectException(BrandEnum.PAGE_FAIL);
@@ -58,11 +74,16 @@ public class BrandFaceImpl implements BrandFace {
     }
 
     @Override
-    public BrandVo createBrand(BrandVo brandVo) throws ProjectException{
+    public BrandVo createBrand(BrandVo brandVo) throws ProjectException {
         try {
             //执行保存
+            BrandVo brandVoResult = BeanConv.toBean(brandService.createBrand(brandVo), BrandVo.class);
             //绑定附件
-            return null;
+            if (!EmptyUtil.isNullOrEmpty(brandVoResult)) {
+                affixFace.bindBusinessId(AffixVo.builder().businessId(brandVoResult.getId()).id(brandVo.getAffixVo().getId()).build());
+            }
+            brandVoResult.setAffixVo(AffixVo.builder().pathUrl(brandVo.getAffixVo().getPathUrl()).businessId(brandVoResult.getId()).id(brandVo.getAffixVo().getId()).build());
+            return brandVoResult;
         } catch (Exception e) {
             log.error("保存品牌异常：{}", ExceptionsUtil.getStackTraceAsString(e));
             throw new ProjectException(BrandEnum.CREATE_FAIL);
@@ -70,13 +91,22 @@ public class BrandFaceImpl implements BrandFace {
     }
 
     @Override
-    public Boolean updateBrand(BrandVo brandVo)throws ProjectException {
+    public Boolean updateBrand(BrandVo brandVo) throws ProjectException {
+        //执行修改
         try {
-            //执行修改
-            //修改对应的附件图片（先删除后添加）
+            Boolean flag = brandService.updateBrand(brandVo);
+            if (flag) {
+                List<AffixVo> affixVoList = affixFace.findAffixVoByBusinessId(brandVo.getId());
+                List<Long> affixIds = affixVoList.stream().map(AffixVo::getId).collect(Collectors.toList());
+                //修改对应的附件图片（先删除后添加）
+                if (!affixIds.contains(brandVo.getAffixVo().getId())) {
                     //删除图片
+                    flag = affixFace.deleteAffixVoByBusinessId(brandVo.getId());
                     //绑定新图片
-            return null;
+                    affixFace.bindBusinessId(AffixVo.builder().businessId(brandVo.getId()).id(brandVo.getAffixVo().getId()).build());
+                }
+            }
+            return flag;
         } catch (Exception e) {
             log.error("修改品牌列表异常：{}", ExceptionsUtil.getStackTraceAsString(e));
             throw new ProjectException(BrandEnum.UPDATE_FAIL);
@@ -85,11 +115,15 @@ public class BrandFaceImpl implements BrandFace {
     }
 
     @Override
-    public Boolean deleteBrand(String[] checkedIds) throws ProjectException{
+    public Boolean deleteBrand(String[] checkedIds) throws ProjectException {
         try {
             //执行删除
+            Boolean flag = brandService.deleteBrand(checkedIds);
             //删除图片
-            return null ;
+            for (String checkedId : checkedIds) {
+                affixFace.deleteAffixVoByBusinessId(Long.valueOf(checkedId));
+            }
+            return flag;
         } catch (Exception e) {
             log.error("删除品牌列表异常：{}", ExceptionsUtil.getStackTraceAsString(e));
             throw new ProjectException(BrandEnum.DELETE_FAIL);
@@ -97,7 +131,7 @@ public class BrandFaceImpl implements BrandFace {
     }
 
     @Override
-    public BrandVo findBrandByBrandId(Long brandId)throws ProjectException {
+    public BrandVo findBrandByBrandId(Long brandId) throws ProjectException {
         try {
             return null;
         } catch (Exception e) {
@@ -107,7 +141,7 @@ public class BrandFaceImpl implements BrandFace {
     }
 
     @Override
-    public List<BrandVo> findBrandVoList()throws ProjectException {
+    public List<BrandVo> findBrandVoList() throws ProjectException {
         try {
             return null;
         } catch (Exception e) {
