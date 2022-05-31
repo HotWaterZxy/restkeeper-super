@@ -122,7 +122,8 @@ public class AppletController {
         @PathVariable("sourceTableId") Long sourceTableId,
         @PathVariable("targetTableId") Long targetTableId,
         @PathVariable("orderNo") Long orderNo) {
-        return null;
+        Boolean flag = appletFace.rotaryTable(sourceTableId, targetTableId, orderNo);
+        return ResponseWrapBuild.build(BrandEnum.SUCCEED,flag);
     }
 
 }
